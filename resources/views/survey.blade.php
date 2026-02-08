@@ -216,7 +216,7 @@
                         </div>
 
                         <!-- Name -->
-                        <d iv>
+                        <div>
                             <label class="font-semibold block mb-1">နာမည်</label>
                             <input type="text" name="name" value="{{ old('name') }}"
                                 class="border border-gray-400 p-3 w-full rounded-lg focus:outline-none focus:border-blue-500 text-sm sm:text-base"
@@ -224,7 +224,7 @@
                             @error('name')
                                 <p class="text-red-600 text-xs sm:text-sm mt-1">{{ $message }}</p>
                             @enderror
-                        </d>
+                        </div>
 
                         <!-- Age Group -->
                         <div>

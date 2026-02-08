@@ -26,6 +26,7 @@ class Survey extends Model
             'choose_reason',
             'drink_meal_important',
             'drink_meal_type',
+            'drink_meal_type_other',
             'drink_flavor',
     ];
 
