@@ -26,9 +26,20 @@ class User extends Authenticatable implements FilamentUser
         'password',
     ];
 
-     public function canAccessPanel(Panel $panel): bool
+    public function canAccessPanel(Panel $panel): bool
     {
-        return true;
+        if ($panel->getId() !== 'admin') {
+            return false;
+        }
+
+        $superAdminRole = (string) config('filament-shield.super_admin.name', 'super_admin');
+        $panelUserRole = (string) config('filament-shield.panel_user.name', 'panel_user');
+
+        if ($this->hasAnyRole([$superAdminRole, $panelUserRole])) {
+            return true;
+        }
+
+        return $this->getAllPermissions()->isNotEmpty();
     }
     /**
      * The attributes that should be hidden for serialization.

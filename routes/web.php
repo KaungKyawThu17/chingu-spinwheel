@@ -21,11 +21,14 @@ Route::get('/', function () {
 Route::get('/survey', [SurveyController::class, 'showSurveyForm'])->name('survey.form');
 
 // Handle survey submit
-Route::post('/survey-submit', [SurveyController::class, 'submitSurvey'])->name('survey.submit');
+Route::post('/survey-submit', [SurveyController::class, 'submitSurvey'])
+    ->middleware('throttle:survey-submit')
+    ->name('survey.submit');
 
 // Show spin wheel
 Route::get('/spin-wheel', [SurveyController::class, 'spinWheel'])->name('survey.spin');
 
 // backend spin API (called by JS)
-Route::post('/spin-wheel/spin', [SurveyController::class, 'processSpin'])->name('survey.spin.process');
-
+Route::post('/spin-wheel/spin', [SurveyController::class, 'processSpin'])
+    ->middleware('throttle:spin-process')
+    ->name('survey.spin.process');

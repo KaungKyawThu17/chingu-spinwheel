@@ -247,22 +247,22 @@ class SurveyController extends Controller
             ], 404);
         }
 
-        // LIMIT: 1 spin per phone
-        if ($survey->has_spun) {
+        // LIMIT: 1 spin per phone/event. Use an atomic conditional update to prevent race conditions.
+        $prize = $this->pickPrize(); // Sticker Pack / Fans / Charm
+        $updated = Survey::query()
+            ->whereKey($survey->id)
+            ->where('has_spun', false)
+            ->update([
+                'has_spun' => true,
+                'prize' => $prize['name'],
+            ]);
+
+        if ($updated === 0) {
             return response()->json([
                 'success' => false,
                 'message' => 'You have already spun the wheel.',
             ], 403);
         }
-
-        // ====== BACKEND WINNING RATIO (60/30/10) ======
-        $prize = $this->pickPrize(); // Sticker Pack / Fans / Charm
-
-        // Save result to DB
-        $survey->update([
-            'has_spun' => true,
-            'prize'    => $prize['name'],
-        ]);
 
         return response()->json([
             'success' => true,

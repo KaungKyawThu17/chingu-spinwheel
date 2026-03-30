@@ -28,6 +28,24 @@ class RouteServiceProvider extends ServiceProvider
             return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
         });
 
+        RateLimiter::for('survey-submit', function (Request $request): array {
+            $sessionId = $request->hasSession() ? $request->session()->getId() : 'no-session';
+
+            return [
+                Limit::perMinute(20)->by('survey-submit:ip:' . $request->ip()),
+                Limit::perMinute(8)->by('survey-submit:session:' . $sessionId),
+            ];
+        });
+
+        RateLimiter::for('spin-process', function (Request $request): array {
+            $sessionId = $request->hasSession() ? $request->session()->getId() : 'no-session';
+
+            return [
+                Limit::perMinute(10)->by('spin-process:ip:' . $request->ip()),
+                Limit::perMinute(5)->by('spin-process:session:' . $sessionId),
+            ];
+        });
+
         $this->routes(function () {
             Route::middleware('api')
                 ->prefix('api')
