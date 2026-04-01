@@ -611,14 +611,18 @@
             const segmentSize = 360 / totalSegments;
             const centerAngle = (normalizedIndex * segmentSize) + (segmentSize / 2);
 
-            const pointerAngle = 270;
-            const baseRotation = pointerAngle - centerAngle;
+            // Conic gradients start at 12 o'clock and move clockwise.
+            // The pointer is fixed at 12 o'clock, so align segment center to 0deg.
+            const pointerAngle = 0;
+            const normalizedCurrent = ((currentRotation % 360) + 360) % 360;
+            const desiredRotation = ((pointerAngle - centerAngle) % 360 + 360) % 360;
+            const deltaToTarget = (desiredRotation - normalizedCurrent + 360) % 360;
             const extraSpins = 5 * 360;
 
             const maxOffset = Math.min(30, Math.max(8, segmentSize / 3));
             const randomOffset = Math.random() * (2 * maxOffset) - maxOffset;
 
-            return currentRotation + extraSpins + baseRotation + randomOffset;
+            return currentRotation + extraSpins + deltaToTarget + randomOffset;
         }
 
         function startSpinVisual() {

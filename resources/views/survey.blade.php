@@ -86,16 +86,16 @@
             @endphp
 
             @if ($activeEvent)
-                <div class="mb-4 rounded-xl border border-gray-200 bg-gray-50 p-3 text-sm sm:text-base">
+                {{-- <div class="mb-4 rounded-xl border border-gray-200 bg-gray-50 p-3 text-sm sm:text-base">
                     <div class="font-semibold text-gray-900">{{ $activeEvent->name }}</div>
                     <div class="text-gray-600">{{ $activeEvent->location }}</div>
                     <div class="text-gray-600">
                         {{ $activeEvent->starts_at?->format('Y-m-d') }} to {{ $activeEvent->ends_at?->format('Y-m-d') }}
                     </div>
-                </div>
+                </div> --}}
 
                 @if ($errors->has('event'))
-                    <p class="text-red-600 text-xs sm:text-sm mb-2">{{ $errors->first('event') }}</p>
+                    Log::info('Event validation error: ' . $errors->first('event'));
                 @endif
 
                 <form action="{{ route('survey.submit') }}" method="POST" class="space-y-5 sm:space-y-6">
