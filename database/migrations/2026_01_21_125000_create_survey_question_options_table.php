@@ -8,19 +8,21 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('survey_answers', function (Blueprint $table) {
+        Schema::create('survey_question_options', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('survey_id')->constrained()->cascadeOnDelete();
             $table->foreignId('survey_question_id')->constrained('survey_questions')->cascadeOnDelete();
-            $table->json('value')->nullable();
+            $table->string('value');
+            $table->string('label');
+            $table->unsignedInteger('order')->default(0);
+            $table->boolean('is_active')->default(true);
             $table->timestamps();
 
-            $table->unique(['survey_id', 'survey_question_id']);
+            $table->unique(['survey_question_id', 'value']);
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('survey_answers');
+        Schema::dropIfExists('survey_question_options');
     }
 };

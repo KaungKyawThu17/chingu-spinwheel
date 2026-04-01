@@ -8,21 +8,21 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('survey_questions', function (Blueprint $table) {
+        Schema::create('prizes', function (Blueprint $table) {
             $table->id();
-            $table->string('key')->unique();
-            $table->string('label');
-            $table->string('type');
-            $table->boolean('is_required')->default(true);
-            $table->boolean('has_other')->default(false);
+            $table->string('name');
+            $table->unsignedInteger('weight')->default(1);
+            $table->string('color', 7)->default('#55B9E6');
             $table->unsignedInteger('order')->default(0);
             $table->boolean('is_active')->default(true);
             $table->timestamps();
+
+            $table->index(['is_active', 'order']);
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('survey_questions');
+        Schema::dropIfExists('prizes');
     }
 };

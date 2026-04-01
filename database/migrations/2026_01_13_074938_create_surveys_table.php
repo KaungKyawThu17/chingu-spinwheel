@@ -15,16 +15,6 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->string('phone');
-            $table->string('age');
-            $table->string('gender');
-            $table->string('job_title');
-            $table->string('drink_time');
-            $table->string('drink_place');
-            $table->string('drink_whom');
-            $table->string('choose_reason');
-            $table->string('drink_meal_important');
-            $table->string('drink_meal_type');
-            $table->string('drink_flavor');
             $table->timestamps();
         });
     }

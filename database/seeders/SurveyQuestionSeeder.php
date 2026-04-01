@@ -10,91 +10,83 @@ class SurveyQuestionSeeder extends Seeder
 {
     public function run(): void
     {
-        if (! Schema::hasTable('survey_questions')) {
+        if (! Schema::hasTable('survey_questions') || ! Schema::hasTable('survey_question_options')) {
             return;
         }
-
-        $now = now();
 
         $questions = [
             [
                 'key' => 'phone',
                 'label' => 'Phone',
                 'type' => 'text',
-                'options' => null,
                 'is_required' => true,
                 'has_other' => false,
                 'order' => 1,
                 'is_active' => true,
-                'created_at' => $now,
-                'updated_at' => $now,
+                'options' => [],
             ],
             [
                 'key' => 'name',
                 'label' => 'Name',
                 'type' => 'text',
-                'options' => null,
                 'is_required' => true,
                 'has_other' => false,
                 'order' => 2,
                 'is_active' => true,
-                'created_at' => $now,
-                'updated_at' => $now,
+                'options' => [],
             ],
             [
                 'key' => 'age',
                 'label' => 'Age Group',
                 'type' => 'select',
+                'is_required' => true,
+                'has_other' => false,
+                'order' => 3,
+                'is_active' => true,
                 'options' => [
                     ['value' => '18-24', 'label' => '18-24'],
                     ['value' => '25-29', 'label' => '25-29'],
                     ['value' => '30-35', 'label' => '30-35'],
                     ['value' => '35+', 'label' => '35+'],
                 ],
-                'is_required' => true,
-                'has_other' => false,
-                'order' => 3,
-                'is_active' => true,
-                'created_at' => $now,
-                'updated_at' => $now,
             ],
             [
                 'key' => 'gender',
                 'label' => 'Gender',
                 'type' => 'radio',
+                'is_required' => true,
+                'has_other' => false,
+                'order' => 4,
+                'is_active' => true,
                 'options' => [
                     ['value' => 'male', 'label' => 'Male'],
                     ['value' => 'female', 'label' => 'Female'],
                     ['value' => 'prefer_no', 'label' => 'Prefer not to say'],
                 ],
-                'is_required' => true,
-                'has_other' => false,
-                'order' => 4,
-                'is_active' => true,
-                'created_at' => $now,
-                'updated_at' => $now,
             ],
             [
                 'key' => 'job_title',
                 'label' => 'Occupation',
                 'type' => 'select',
+                'is_required' => true,
+                'has_other' => true,
+                'order' => 5,
+                'is_active' => true,
                 'options' => [
                     ['value' => 'student', 'label' => 'Student'],
                     ['value' => 'office', 'label' => 'Office worker'],
                     ['value' => 'business', 'label' => 'Business owner'],
                     ['value' => 'freelancer', 'label' => 'Freelancer'],
                 ],
-                'is_required' => true,
-                'has_other' => true,
-                'order' => 5,
-                'is_active' => true,
-                'created_at' => $now,
-                'updated_at' => $now,
             ],
             [
                 'key' => 'drink_time',
                 'label' => 'How often do you drink?',
                 'type' => 'radio',
+                'is_required' => true,
+                'has_other' => false,
+                'order' => 6,
+                'is_active' => true,
                 'options' => [
                     ['value' => 'daily', 'label' => 'Daily'],
                     ['value' => 'oneormore', 'label' => 'Once or more per week'],
@@ -102,17 +94,15 @@ class SurveyQuestionSeeder extends Seeder
                     ['value' => 'monthly', 'label' => 'A few times per month'],
                     ['value' => 'special', 'label' => 'Special occasions only'],
                 ],
-                'is_required' => true,
-                'has_other' => false,
-                'order' => 6,
-                'is_active' => true,
-                'created_at' => $now,
-                'updated_at' => $now,
             ],
             [
                 'key' => 'drink_place',
                 'label' => 'Where do you usually drink?',
                 'type' => 'checkbox',
+                'is_required' => true,
+                'has_other' => false,
+                'order' => 7,
+                'is_active' => true,
                 'options' => [
                     ['value' => 'home', 'label' => 'Home'],
                     ['value' => 'bar', 'label' => 'Bar'],
@@ -120,34 +110,30 @@ class SurveyQuestionSeeder extends Seeder
                     ['value' => 'korean_bbq', 'label' => 'Korean BBQ'],
                     ['value' => 'staycation', 'label' => 'Staycation'],
                 ],
-                'is_required' => true,
-                'has_other' => false,
-                'order' => 7,
-                'is_active' => true,
-                'created_at' => $now,
-                'updated_at' => $now,
             ],
             [
                 'key' => 'drink_whom',
                 'label' => 'Who do you usually drink with?',
                 'type' => 'radio',
+                'is_required' => true,
+                'has_other' => false,
+                'order' => 8,
+                'is_active' => true,
                 'options' => [
                     ['value' => 'friends', 'label' => 'Friends'],
                     ['value' => 'family', 'label' => 'Family'],
                     ['value' => 'colleagues', 'label' => 'Colleagues'],
                     ['value' => 'alone', 'label' => 'Alone'],
                 ],
-                'is_required' => true,
-                'has_other' => false,
-                'order' => 8,
-                'is_active' => true,
-                'created_at' => $now,
-                'updated_at' => $now,
             ],
             [
                 'key' => 'choose_reason',
                 'label' => 'Why do you choose this brand?',
                 'type' => 'checkbox',
+                'is_required' => true,
+                'has_other' => false,
+                'order' => 9,
+                'is_active' => true,
                 'options' => [
                     ['value' => 'taste', 'label' => 'Taste'],
                     ['value' => 'alcohol', 'label' => 'Alcohol content'],
@@ -156,49 +142,43 @@ class SurveyQuestionSeeder extends Seeder
                     ['value' => 'brand_reputation', 'label' => 'Brand reputation'],
                     ['value' => 'availability', 'label' => 'Availability'],
                 ],
-                'is_required' => true,
-                'has_other' => false,
-                'order' => 9,
-                'is_active' => true,
-                'created_at' => $now,
-                'updated_at' => $now,
             ],
             [
                 'key' => 'drink_meal_important',
                 'label' => 'How important is food pairing?',
                 'type' => 'radio',
+                'is_required' => true,
+                'has_other' => false,
+                'order' => 10,
+                'is_active' => true,
                 'options' => [
                     ['value' => 'very', 'label' => 'Very important'],
                     ['value' => 'somewhat', 'label' => 'Somewhat important'],
                     ['value' => 'not_important', 'label' => 'Not important'],
                 ],
-                'is_required' => true,
-                'has_other' => false,
-                'order' => 10,
-                'is_active' => true,
-                'created_at' => $now,
-                'updated_at' => $now,
             ],
             [
                 'key' => 'drink_meal_type',
                 'label' => 'What food pairs well with your drink?',
                 'type' => 'checkbox',
+                'is_required' => true,
+                'has_other' => true,
+                'order' => 11,
+                'is_active' => true,
                 'options' => [
                     ['value' => 'korean_bbq', 'label' => 'Korean BBQ'],
                     ['value' => 'spicy', 'label' => 'Spicy dishes'],
                     ['value' => 'fried', 'label' => 'Fried food'],
                 ],
-                'is_required' => true,
-                'has_other' => true,
-                'order' => 11,
-                'is_active' => true,
-                'created_at' => $now,
-                'updated_at' => $now,
             ],
             [
                 'key' => 'drink_flavor',
                 'label' => 'Which flavors do you prefer?',
                 'type' => 'checkbox',
+                'is_required' => true,
+                'has_other' => false,
+                'order' => 12,
+                'is_active' => true,
                 'options' => [
                     ['value' => 'fresh', 'label' => 'Fresh'],
                     ['value' => 'peach', 'label' => 'Peach'],
@@ -209,20 +189,33 @@ class SurveyQuestionSeeder extends Seeder
                     ['value' => 'green_grape', 'label' => 'Green Grape'],
                     ['value' => 'lychee', 'label' => 'Lychee'],
                 ],
-                'is_required' => true,
-                'has_other' => false,
-                'order' => 12,
-                'is_active' => true,
-                'created_at' => $now,
-                'updated_at' => $now,
             ],
         ];
 
         foreach ($questions as $question) {
-            SurveyQuestion::firstOrCreate(
+            $optionPairs = $question['options'] ?? [];
+            unset($question['options']);
+
+            $record = SurveyQuestion::updateOrCreate(
                 ['key' => $question['key']],
-                $question
+                $question,
             );
+
+            $record->questionOptions()->delete();
+
+            $rows = [];
+            foreach ($optionPairs as $index => $option) {
+                $rows[] = [
+                    'value' => (string) $option['value'],
+                    'label' => (string) ($option['label'] ?? $option['value']),
+                    'order' => $index + 1,
+                    'is_active' => true,
+                ];
+            }
+
+            if (! empty($rows)) {
+                $record->questionOptions()->createMany($rows);
+            }
         }
     }
 }

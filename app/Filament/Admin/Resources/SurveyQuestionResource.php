@@ -21,16 +21,6 @@ class SurveyQuestionResource extends Resource
     protected static array $availableKeys = [
         'phone' => 'phone',
         'name' => 'name',
-        'age' => 'age',
-        'gender' => 'gender',
-        'job_title' => 'job_title',
-        'drink_time' => 'drink_time',
-        'drink_place' => 'drink_place',
-        'drink_whom' => 'drink_whom',
-        'choose_reason' => 'choose_reason',
-        'drink_meal_important' => 'drink_meal_important',
-        'drink_meal_type' => 'drink_meal_type',
-        'drink_flavor' => 'drink_flavor',
     ];
 
     public static function form(Form $form): Form
@@ -47,7 +37,7 @@ class SurveyQuestionResource extends Resource
                             ->regex('/^[a-z0-9_]+$/')
                             ->disabledOn('edit')
                             ->unique(ignoreRecord: true)
-                            ->helperText("Built-in keys: {$keyList}. Use a new key to store answers in the survey_answers table."),
+                            ->helperText("Survey columns: {$keyList}. All other keys are stored in survey_responses."),
                         Forms\Components\Textarea::make('label')
                             ->label('Question Text')
                             ->required()
@@ -64,7 +54,8 @@ class SurveyQuestionResource extends Resource
                             ->required()
                             ->default('text')
                             ->reactive(),
-                        Forms\Components\Repeater::make('options')
+                        Forms\Components\Repeater::make('questionOptions')
+                            ->relationship('questionOptions')
                             ->schema([
                                 Forms\Components\TextInput::make('value')
                                     ->required()
@@ -72,40 +63,15 @@ class SurveyQuestionResource extends Resource
                                 Forms\Components\TextInput::make('label')
                                     ->required()
                                     ->maxLength(255),
+                                Forms\Components\TextInput::make('order')
+                                    ->numeric()
+                                    ->default(0),
+                                Forms\Components\Toggle::make('is_active')
+                                    ->default(true),
                             ])
                             ->addActionLabel('Add option')
                             ->defaultItems(0)
                             ->columns(2)
-                            ->afterStateHydrated(function (Forms\Components\Repeater $component, $state): void {
-                                if (! is_array($state)) {
-                                    $component->state([]);
-                                    return;
-                                }
-
-                                $normalized = [];
-                                foreach ($state as $option) {
-                                    if (is_array($option)) {
-                                        $value = $option['value'] ?? null;
-                                        $label = $option['label'] ?? $value;
-
-                                        if ($value === null) {
-                                            continue;
-                                        }
-
-                                        $normalized[] = [
-                                            'value' => $value,
-                                            'label' => $label,
-                                        ];
-                                    } else {
-                                        $normalized[] = [
-                                            'value' => $option,
-                                            'label' => $option,
-                                        ];
-                                    }
-                                }
-
-                                $component->state($normalized);
-                            })
                             ->visible(fn (Forms\Get $get): bool => in_array($get('type'), ['select', 'radio', 'checkbox'], true)),
                         Forms\Components\Toggle::make('is_required')
                             ->default(true),

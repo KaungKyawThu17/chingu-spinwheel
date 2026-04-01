@@ -3,8 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Event;
+use App\Models\Prize;
 use App\Models\Survey;
-use App\Models\SurveyAnswer;
+use App\Models\SurveyResponse;
 use App\Models\SurveyQuestion;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -16,6 +17,14 @@ use Illuminate\Support\Facades\Validator;
 
 class SurveyController extends Controller
 {
+    /**
+     * @var array<int, array{name: string, weight: int, color: string}>
+     */
+    private const DEFAULT_WHEEL_PRIZES = [
+        ['name' => 'Sticker Pack', 'weight' => 60, 'color' => '#55B9E6'],
+        ['name' => 'Fans', 'weight' => 30, 'color' => '#F7B7C4'],
+        ['name' => 'Charm', 'weight' => 10, 'color' => '#52B848'],
+    ];
 
     public function showSurveyForm(Request $request)
     {
@@ -31,7 +40,9 @@ class SurveyController extends Controller
     // Show spin wheel
     public function spinWheel()
     {
-        return view('spinwheel');
+        return view('spinwheel', [
+            'wheelPrizes' => $this->getWheelPrizes(),
+        ]);
     }
     //
     public function submitSurvey(Request $request)
@@ -47,141 +58,13 @@ class SurveyController extends Controller
         }
 
         $questions = $this->getSurveyQuestions();
-
-        if ($questions->isNotEmpty()) {
-            return $this->submitDynamicSurvey($request, $questions, $activeEvent);
-        }
-
-        $request->merge([
-            'phone' => preg_replace('/\D/', '', $request->phone)
-        ]);
-
-        $validator = Validator::make($request->all(), [
-            'name'   => 'required|string|max:255',
-            'phone'  => [
-                'required',
-                'regex:#^(09|959)[0-9]{7,9}$#',
-            ],
-
-            'age'    => 'required|string',
-            'gender' => 'required|string',
-            'job_title' => 'required|string',
-            'job_title_other' => 'nullable|string|max:255',
-
-            'drink_time' => 'required|string',
-
-            // if drink_place is multiple, make it array; adjust if single
-            'drink_place' => 'required|array',
-            'drink_place.*' => 'string',
-
-
-            'drink_whom' => 'required|string',
-
-            // choose_reason (if multi-select, same array logic)
-            'choose_reason' => 'required|array',
-            'choose_reason.*' => 'string',
-
-
-            'drink_meal_important' => 'required|string',
-
-            'drink_meal_type' => 'required|array',
-            'drink_meal_type.*' => 'string',
-
-            // we’ll add custom rule for drink_meal_type_other in ->after()
-            'drink_meal_type_other' => 'nullable|string|max:255',
-
-            // if flavors are multiple, use array; if single, string
-            'drink_flavor' => 'required|array',
-            'drink_flavor.*' => 'string',
-
-        ], [
-            'phone.required' => 'ဖုန်းနံပါတ်ကို ဖြည့်ပါ။',
-            'phone.regex' => 'ဖုန်းနံပါတ်သည် မြန်မာဖုန်းနံပါတ် format အတိုင်းမဟုတ်ပါ။',
-        ]);
-
-        // 🔴 Custom "other must be filled" rule here
-        $validator->after(function ($validator) use ($request) {
-            $types = (array) $request->input('drink_meal_type', []);
-
-            if (in_array('other', $types)) {
-                $other = $request->input('drink_meal_type_other');
-
-                if (!$other || trim($other) === '') {
-                    $validator->errors()->add(
-                        'drink_meal_type_other',
-                        'အခြားရွေးချယ်ပါက အကြောင်းအရာကို ဖြည့်ရန် လိုအပ်ပါသည်။'
-                    );
-                }
-            }
-        });
-
-        $validator->after(function ($validator) use ($request) {
-            if ($request->job_title === 'other') {
-                if (!$request->job_title_other || trim($request->job_title_other) === '') {
-                    $validator->errors()->add(
-                        'job_title_other',
-                        'အလုပ်အကိုင် Other ကိုရွေးချယ်ပါက ရေးထည့်ပေးရန် လိုအပ်သည်။'
-                    );
-                }
-            }
-        });
-
-        if ($validator->fails()) {
+        if ($questions->isEmpty()) {
             return back()
-                ->withErrors($validator)
+                ->withErrors(['survey' => 'Survey questions are not configured yet.'])
                 ->withInput();
         }
 
-        $validated = $validator->validated();
-        $phone = $validated['phone'];
-
-        if (str_starts_with($phone, '09')) {
-            $phone = '959' . substr($phone, 2);
-        }
-
-        // Clean "other" out of drink_meal_type and replace with typed value
-        $mealTypes = $validated['drink_meal_type'];
-
-        // remove literal "other"
-        $mealTypes = array_filter($mealTypes, fn($item) => $item !== 'other');
-
-        // add user-typed other if exists
-        if (!empty($validated['drink_meal_type_other'])) {
-            $mealTypes[] = $validated['drink_meal_type_other'];
-        }
-
-        $finalJobTitle = $validated['job_title'] === 'other'
-            ? $validated['job_title_other']
-            : $validated['job_title'];
-
-
-        // 🔽 your create, using $mealTypes instead of raw drink_meal_type
-        $survey = Survey::create([
-            'name'   => $validated['name'],
-            'phone'  => $phone,
-            'age'    => $validated['age'],
-            'gender' => $validated['gender'],
-            'job_title' => $finalJobTitle,
-            'drink_time' => $validated['drink_time'],
-            'drink_place' =>  json_encode($validated['drink_place']),
-            'drink_whom' => $validated['drink_whom'],
-            'choose_reason' =>  json_encode($validated['choose_reason']),
-            'drink_meal_important' => $validated['drink_meal_important'],
-
-            'drink_meal_type' => json_encode($mealTypes),
-            'drink_meal_type_other' => $validated['drink_meal_type_other'] ?? null,
-
-            'drink_flavor' => json_encode($validated['drink_flavor']),
-            'event_id' => $activeEvent->id,
-        ]);
-
-        // keep your redirect to spin page etc.
-        session([
-            'survey_phone' => $survey->phone,
-            'survey_event_id' => $survey->event_id,
-        ]);
-
-        return redirect()->route('survey.spin');
+        return $this->submitDynamicSurvey($request, $questions, $activeEvent);
     }
 
     private function submitDynamicSurvey(Request $request, Collection $questions, Event $activeEvent)
@@ -212,7 +95,7 @@ class SurveyController extends Controller
             ...$data,
             'event_id' => $activeEvent->id,
         ]);
-        $this->storeSurveyAnswers($survey, $questions, $validated);
+        $this->storeSurveyResponses($survey, $questions, $validated);
 
         session([
             'survey_phone' => $survey->phone,
@@ -248,7 +131,8 @@ class SurveyController extends Controller
         }
 
         // LIMIT: 1 spin per phone/event. Use an atomic conditional update to prevent race conditions.
-        $prize = $this->pickPrize(); // Sticker Pack / Fans / Charm
+        $wheelPrizes = $this->getWheelPrizes();
+        $prize = $this->pickPrize($wheelPrizes);
         $updated = Survey::query()
             ->whereKey($survey->id)
             ->where('has_spun', false)
@@ -268,19 +152,25 @@ class SurveyController extends Controller
             'success' => true,
             'prize'   => $prize['name'],
             'segment' => $prize['index'],
+            'segmentCount' => count($wheelPrizes),
         ]);
     }
 
-    private function pickPrize(): array
+    /**
+     * @param array<int, array{name: string, weight: int, color: string}> $prizes
+     * @return array{name: string, index: int}
+     */
+    private function pickPrize(array $prizes): array
     {
-        // ORDER HERE MUST MATCH FRONTEND 'segments' ARRAY
-        $prizes = [
-            ['name' => 'Sticker Pack', 'weight' => 60],
-            ['name' => 'Fans',         'weight' => 30],
-            ['name' => 'Charm',        'weight' => 10],
-        ];
-
         $totalWeight = array_sum(array_column($prizes, 'weight'));
+
+        if ($totalWeight <= 0) {
+            return [
+                'name' => $prizes[0]['name'],
+                'index' => 0,
+            ];
+        }
+
         $rand = random_int(1, $totalWeight); // secure & fair
         $running = 0;
 
@@ -302,6 +192,45 @@ class SurveyController extends Controller
         ];
     }
 
+    /**
+     * @return array<int, array{name: string, weight: int, color: string}>
+     */
+    private function getWheelPrizes(): array
+    {
+        if (! Schema::hasTable('prizes')) {
+            return self::DEFAULT_WHEEL_PRIZES;
+        }
+
+        $prizes = Prize::query()
+            ->where('is_active', true)
+            ->orderBy('order')
+            ->orderBy('id')
+            ->get(['name', 'weight', 'color'])
+            ->map(function (Prize $prize, int $index): array {
+                return [
+                    'name' => trim((string) $prize->name),
+                    'weight' => max(0, (int) $prize->weight),
+                    'color' => $this->normalizePrizeColor($prize->color, $index),
+                ];
+            })
+            ->filter(fn (array $prize): bool => $prize['name'] !== '' && $prize['weight'] > 0)
+            ->values()
+            ->all();
+
+        return ! empty($prizes) ? $prizes : self::DEFAULT_WHEEL_PRIZES;
+    }
+
+    private function normalizePrizeColor(?string $color, int $index): string
+    {
+        $value = strtoupper(trim((string) $color));
+
+        if (preg_match('/^#[0-9A-F]{6}$/', $value) === 1) {
+            return $value;
+        }
+
+        return self::DEFAULT_WHEEL_PRIZES[$index % count(self::DEFAULT_WHEEL_PRIZES)]['color'];
+    }
+
     private function getSurveyQuestions(): Collection
     {
         if (! Schema::hasTable('survey_questions')) {
@@ -311,6 +240,7 @@ class SurveyController extends Controller
         return SurveyQuestion::query()
             ->where('is_active', true)
             ->orderBy('order')
+            ->with(['questionOptions' => fn ($query) => $query->where('is_active', true)->orderBy('order')])
             ->get();
     }
 
@@ -488,7 +418,7 @@ class SurveyController extends Controller
         return $values;
     }
 
-    private function storeSurveyAnswers(Survey $survey, Collection $questions, array $validated): void
+    private function storeSurveyResponses(Survey $survey, Collection $questions, array $validated): void
     {
         $surveyKeys = $this->getSurveyFieldKeys();
 
@@ -505,7 +435,7 @@ class SurveyController extends Controller
                 continue;
             }
 
-            SurveyAnswer::create([
+            SurveyResponse::create([
                 'survey_id' => $survey->id,
                 'survey_question_id' => $question->id,
                 'value' => $value,
@@ -525,16 +455,6 @@ class SurveyController extends Controller
         $defaults = [
             'name' => '',
             'phone' => '',
-            'age' => '',
-            'gender' => '',
-            'job_title' => '',
-            'drink_time' => '',
-            'drink_place' => json_encode([]),
-            'drink_whom' => '',
-            'choose_reason' => json_encode([]),
-            'drink_meal_important' => '',
-            'drink_meal_type' => json_encode([]),
-            'drink_flavor' => json_encode([]),
         ];
 
         foreach ($defaults as $key => $value) {

@@ -179,13 +179,7 @@
             height: 90%;
             border-radius: 50%;
             border: 8px solid rgba(15, 23, 42, 0.95);
-            background: conic-gradient(#52B848 0deg 120deg,
-                    /* Charm */
-                    #55B9E6 120deg 240deg,
-                    /* Sticker Pack */
-                    #F7B7C4 240deg 360deg
-                    /* Fans */
-                );
+            background: #55B9E6;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -312,32 +306,18 @@
             inset: 18%;
             border-radius: 50%;
             pointer-events: none;
-            font-size: 0.7rem;
-            font-weight: 600;
+            font-size: 0.62rem;
+            font-weight: 700;
             color: #020617;
             text-transform: uppercase;
         }
 
-        .wheel-labels span {
+        .wheel-label {
             position: absolute;
             text-align: center;
-            width: 58%;
+            width: 44%;
+            transform: translate(-50%, -50%);
             filter: drop-shadow(0 1px 4px rgba(255, 255, 255, 0.7));
-        }
-
-        .label-sticker {
-            bottom: -7%;
-            right: 20%;
-        }
-
-        .label-fans {
-            bottom: 64%;
-            left: -16%;
-        }
-
-        .label-charm {
-            top: 26%;
-            right: -19%;
         }
 
         .label-chip {
@@ -353,18 +333,6 @@
             width: 8px;
             height: 8px;
             border-radius: 999px;
-        }
-
-        .label-dot.sticker {
-            background: #facc15;
-        }
-
-        .label-dot.fans {
-            background: #38bdf8;
-        }
-
-        .label-dot.charm {
-            background: #fb7185;
         }
 
         button {
@@ -461,18 +429,6 @@
             border-radius: 999px;
         }
 
-        .legend-dot.sticker {
-            background: #55B9E6;
-        }
-
-        .legend-dot.fans {
-            background: #F7B7C4;
-        }
-
-        .legend-dot.charm {
-            background: #52B848;
-        }
-
         .legend-item span {
             white-space: nowrap;
         }
@@ -551,25 +507,7 @@
                             <span>Spin</span>
                         </div>
 
-                        <div class="wheel-labels">
-                            <span class="label-sticker">
-
-
-                                Sticker Pack
-
-                            </span>
-                            <span class="label-fans">
-
-                                Fans
-
-                            </span>
-                            <span class="label-charm">
-
-
-                                Charm
-
-                            </span>
-                        </div>
+                        <div id="wheelLabels" class="wheel-labels"></div>
                     </div>
                 </div>
             </div>
@@ -612,34 +550,72 @@
 
 
         const wheel = document.getElementById('wheel');
+        const wheelLabels = document.getElementById('wheelLabels');
         const spinBtn = document.getElementById('spinBtn');
         const resultDiv = document.getElementById('result');
         const centerCircle = document.getElementById('centerCircle');
+        const wheelPrizes = @json($wheelPrizes ?? []);
 
         let spinning = false;
         let currentRotation = 0;
+        const fallbackPrizes = [{
+                name: 'Sticker Pack',
+                color: '#55B9E6'
+            },
+            {
+                name: 'Fans',
+                color: '#F7B7C4'
+            },
+            {
+                name: 'Charm',
+                color: '#52B848'
+            },
+        ];
+        const activePrizes = Array.isArray(wheelPrizes) && wheelPrizes.length > 0 ? wheelPrizes : fallbackPrizes;
 
-        function computeRotationForPrize(prize) {
-            let centerAngle;
+        function buildWheelVisual() {
+            const segmentSize = 360 / activePrizes.length;
+            const stops = [];
 
-            switch (prize) {
-                case 'Sticker Pack':
-                    centerAngle = 60; // middle of 0–120
-                    break;
-                case 'Fans':
-                    centerAngle = 180; // middle of 120–240
-                    break;
-                case 'Charm':
-                default:
-                    centerAngle = 300; // middle of 240–360
-                    break;
-            }
+            activePrizes.forEach((prize, index) => {
+                const start = index * segmentSize;
+                const end = (index + 1) * segmentSize;
+                const color = typeof prize.color === 'string' ? prize.color : fallbackPrizes[index % fallbackPrizes
+                    .length].color;
+                stops.push(`${color} ${start}deg ${end}deg`);
+            });
+
+            wheel.style.background = `conic-gradient(${stops.join(', ')})`;
+            wheelLabels.innerHTML = '';
+
+            activePrizes.forEach((prize, index) => {
+                const centerDeg = (index * segmentSize) + (segmentSize / 2);
+                const rad = (centerDeg - 90) * (Math.PI / 180);
+                const radiusPercent = 39;
+                const x = 50 + (Math.cos(rad) * radiusPercent);
+                const y = 50 + (Math.sin(rad) * radiusPercent);
+
+                const label = document.createElement('span');
+                label.className = 'wheel-label';
+                label.style.left = `${x}%`;
+                label.style.top = `${y}%`;
+                label.textContent = prize.name;
+                wheelLabels.appendChild(label);
+            });
+        }
+
+        function computeRotationForSegment(segmentIndex, segmentCount) {
+            const normalizedIndex = Number.isInteger(segmentIndex) && segmentIndex >= 0 ? segmentIndex : 0;
+            const totalSegments = Number.isInteger(segmentCount) && segmentCount > 0 ? segmentCount : activePrizes
+                .length;
+            const segmentSize = 360 / totalSegments;
+            const centerAngle = (normalizedIndex * segmentSize) + (segmentSize / 2);
 
             const pointerAngle = 270;
             const baseRotation = pointerAngle - centerAngle;
             const extraSpins = 5 * 360;
 
-            const maxOffset = 30;
+            const maxOffset = Math.min(30, Math.max(8, segmentSize / 3));
             const randomOffset = Math.random() * (2 * maxOffset) - maxOffset;
 
             return currentRotation + extraSpins + baseRotation + randomOffset;
@@ -652,6 +628,8 @@
         function stopSpinVisual() {
             centerCircle.classList.remove('spinning');
         }
+
+        buildWheelVisual();
 
         spinBtn.addEventListener('click', () => {
             if (spinning) return;
@@ -693,9 +671,11 @@
                         return;
                     }
 
-                    const prize = data.prize; // e.g. "Fans"
-
-                    const targetRotation = computeRotationForPrize(prize);
+                    const prize = data.prize;
+                    const segment = Number.isInteger(data.segment) ? data.segment : 0;
+                    const segmentCount = Number.isInteger(data.segmentCount) ? data.segmentCount : activePrizes
+                        .length;
+                    const targetRotation = computeRotationForSegment(segment, segmentCount);
                     currentRotation = targetRotation;
 
                     wheel.style.transform = `rotate(${targetRotation}deg)`;

@@ -6,9 +6,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class SurveyAnswer extends Model
+class SurveyResponse extends Model
 {
     use HasFactory;
+
+    protected $table = 'survey_responses';
 
     protected $fillable = [
         'survey_id',

@@ -14,7 +14,6 @@ class SurveyQuestion extends Model
         'key',
         'label',
         'type',
-        'options',
         'is_required',
         'has_other',
         'order',
@@ -22,15 +21,19 @@ class SurveyQuestion extends Model
     ];
 
     protected $casts = [
-        'options' => 'array',
         'is_required' => 'boolean',
         'has_other' => 'boolean',
         'is_active' => 'boolean',
     ];
 
-    public function answers(): HasMany
+    public function responses(): HasMany
     {
-        return $this->hasMany(SurveyAnswer::class);
+        return $this->hasMany(SurveyResponse::class);
+    }
+
+    public function questionOptions(): HasMany
+    {
+        return $this->hasMany(SurveyQuestionOption::class)->orderBy('order');
     }
 
     /**
@@ -38,28 +41,23 @@ class SurveyQuestion extends Model
      */
     public function getOptionPairsAttribute(): array
     {
-        $options = $this->options ?? [];
+        $options = $this->relationLoaded('questionOptions')
+            ? $this->questionOptions->where('is_active', true)
+            : $this->questionOptions()->where('is_active', true)->get();
         $pairs = [];
 
         foreach ($options as $option) {
-            if (is_array($option)) {
-                $value = $option['value'] ?? null;
-                $label = $option['label'] ?? $value;
+            $value = $option->value ?? null;
+            $label = $option->label ?? $value;
 
-                if ($value === null) {
-                    continue;
-                }
-
-                $pairs[] = [
-                    'value' => (string) $value,
-                    'label' => (string) $label,
-                ];
-            } else {
-                $pairs[] = [
-                    'value' => (string) $option,
-                    'label' => (string) $option,
-                ];
+            if ($value === null) {
+                continue;
             }
+
+            $pairs[] = [
+                'value' => (string) $value,
+                'label' => (string) $label,
+            ];
         }
 
         return $pairs;

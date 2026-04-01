@@ -14,6 +14,22 @@ class SurveyExporter extends Exporter
 {
     protected static ?string $model = Survey::class;
 
+    /**
+     * @var array<string, string>
+     */
+    private const DEFAULT_QUESTION_KEYS = [
+        'age' => 'Age',
+        'gender' => 'Gender',
+        'job_title' => 'Job Title',
+        'drink_time' => 'Drink Time',
+        'drink_place' => 'Drink Place',
+        'drink_whom' => 'Drink With',
+        'choose_reason' => 'Choose Reason',
+        'drink_meal_important' => 'Meal Pairing Importance',
+        'drink_meal_type' => 'Meal Pairing Type',
+        'drink_flavor' => 'Drink Flavor',
+    ];
+
     public static function getColumns(): array
     {
         $columns = [
@@ -27,45 +43,28 @@ class SurveyExporter extends Exporter
                 ->label('Name'),
             ExportColumn::make('phone')
                 ->label('Phone'),
-            ExportColumn::make('age')
-                ->label('Age'),
-            ExportColumn::make('gender')
-                ->label('Gender'),
-            ExportColumn::make('job_title')
-                ->label('Job Title'),
-            ExportColumn::make('drink_time')
-                ->label('Drink Time'),
-            ExportColumn::make('drink_place')
-                ->label('Drink Place')
-                ->formatStateUsing(fn ($state) => self::formatList($state)),
-            ExportColumn::make('drink_whom')
-                ->label('Drink With'),
-            ExportColumn::make('choose_reason')
-                ->label('Choose Reason')
-                ->formatStateUsing(fn ($state) => self::formatList($state)),
-            ExportColumn::make('drink_meal_important')
-                ->label('Meal Pairing Importance'),
-            ExportColumn::make('drink_meal_type')
-                ->label('Meal Pairing Type')
-                ->formatStateUsing(fn ($state) => self::formatList($state)),
-            ExportColumn::make('drink_flavor')
-                ->label('Drink Flavor')
-                ->formatStateUsing(fn ($state) => self::formatList($state)),
-            ExportColumn::make('has_spun')
-                ->label('Has Spun')
-                ->formatStateUsing(fn ($state) => $state ? 'yes' : 'no'),
-            ExportColumn::make('prize')
-                ->label('Prize'),
-            ExportColumn::make('created_at')
-                ->label('Submitted At')
-                ->formatStateUsing(function ($state): string {
-                    if ($state instanceof \DateTimeInterface) {
-                        return $state->format('Y-m-d H:i:s');
-                    }
-
-                    return $state ? (string) $state : '';
-                }),
         ];
+
+        foreach (self::DEFAULT_QUESTION_KEYS as $key => $label) {
+            $columns[] = self::makeQuestionColumn($key, $label, true);
+        }
+
+        $columns[] = ExportColumn::make('has_spun')
+            ->label('Has Spun')
+            ->formatStateUsing(fn ($state) => $state ? 'yes' : 'no');
+
+        $columns[] = ExportColumn::make('prize')
+            ->label('Prize');
+
+        $columns[] = ExportColumn::make('created_at')
+            ->label('Submitted At')
+            ->formatStateUsing(function ($state): string {
+                if ($state instanceof \DateTimeInterface) {
+                    return $state->format('Y-m-d H:i:s');
+                }
+
+                return $state ? (string) $state : '';
+            });
 
         foreach (self::getExtraQuestionColumns() as $column) {
             $columns[] = $column;
@@ -84,26 +83,7 @@ class SurveyExporter extends Exporter
 
     public static function modifyQuery(Builder $query): Builder
     {
-        return $query->with(['event', 'answers.question']);
-    }
-
-    private static function formatList(mixed $state): string
-    {
-        if (is_array($state)) {
-            return implode(', ', $state);
-        }
-
-        if (! is_string($state)) {
-            return '';
-        }
-
-        $decoded = json_decode($state, true);
-
-        if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
-            return implode(', ', $decoded);
-        }
-
-        return $state;
+        return $query->with(['event', 'responses.question']);
     }
 
     /**
@@ -111,35 +91,20 @@ class SurveyExporter extends Exporter
      */
     private static function getExtraQuestionColumns(): array
     {
-        if (! Schema::hasTable('survey_questions') || ! Schema::hasTable('survey_answers')) {
+        if (! Schema::hasTable('survey_questions') || ! Schema::hasTable('survey_responses')) {
             return [];
         }
 
-        $surveyKeys = self::getSurveyFieldKeys();
+        $skipKeys = [
+            ...self::getSurveyFieldKeys(),
+            ...array_keys(self::DEFAULT_QUESTION_KEYS),
+        ];
 
         return SurveyQuestion::query()
             ->orderBy('order')
             ->get()
-            ->reject(fn (SurveyQuestion $question): bool => in_array($question->key, $surveyKeys, true))
-            ->map(function (SurveyQuestion $question): ExportColumn {
-                return ExportColumn::make("extra.{$question->key}")
-                    ->label($question->label)
-                    ->state(function (Survey $record) use ($question): string {
-                        if (! $record->relationLoaded('answers')) {
-                            return '';
-                        }
-
-                        $answer = $record->answers
-                            ->firstWhere('survey_question_id', $question->id);
-
-                        if (! $answer) {
-                            return '';
-                        }
-
-                        return self::formatAnswerValue($answer->value);
-                    })
-                    ->enabledByDefault(false);
-            })
+            ->reject(fn (SurveyQuestion $question): bool => in_array($question->key, $skipKeys, true))
+            ->map(fn (SurveyQuestion $question): ExportColumn => self::makeQuestionColumn($question->key, $question->label, false))
             ->values()
             ->all();
     }
@@ -152,6 +117,31 @@ class SurveyExporter extends Exporter
         $fillable = (new Survey())->getFillable();
 
         return array_values(array_diff($fillable, ['has_spun', 'prize', 'event_id']));
+    }
+
+    private static function makeQuestionColumn(string $key, string $label, bool $enabledByDefault): ExportColumn
+    {
+        return ExportColumn::make("question.{$key}")
+            ->label($label)
+            ->state(fn (Survey $record): string => self::answerByKey($record, $key))
+            ->enabledByDefault($enabledByDefault);
+    }
+
+    private static function answerByKey(Survey $record, string $key): string
+    {
+        if (! $record->relationLoaded('responses')) {
+            return '';
+        }
+
+        $response = $record->responses->first(function ($response) use ($key) {
+            return $response->question?->key === $key;
+        });
+
+        if (! $response) {
+            return '';
+        }
+
+        return self::formatAnswerValue($response->value);
     }
 
     private static function formatAnswerValue(mixed $value): string

@@ -56,40 +56,6 @@ class SurveyResource extends Resource implements HasShieldPermissions
                         Forms\Components\TextInput::make('phone')
                             ->required()
                             ->maxLength(255),
-                        Forms\Components\TextInput::make('age')
-                            ->required()
-                            ->maxLength(255),
-                        Forms\Components\TextInput::make('gender')
-                            ->required()
-                            ->maxLength(255),
-                        Forms\Components\TextInput::make('job_title')
-                            ->required()
-                            ->maxLength(255),
-                    ])
-                    ->columns(2),
-                Forms\Components\Section::make('Survey Answers')
-                    ->schema([
-                        Forms\Components\TextInput::make('drink_time')
-                            ->required()
-                            ->maxLength(255),
-                        Forms\Components\TextInput::make('drink_place')
-                            ->required()
-                            ->maxLength(255),
-                        Forms\Components\TextInput::make('drink_whom')
-                            ->required()
-                            ->maxLength(255),
-                        Forms\Components\TextInput::make('choose_reason')
-                            ->required()
-                            ->maxLength(255),
-                        Forms\Components\TextInput::make('drink_meal_important')
-                            ->required()
-                            ->maxLength(255),
-                        Forms\Components\TextInput::make('drink_meal_type')
-                            ->required()
-                            ->maxLength(255),
-                        Forms\Components\TextInput::make('drink_flavor')
-                            ->required()
-                            ->maxLength(255),
                     ])
                     ->columns(2),
                 Forms\Components\Section::make('Spin Results')
@@ -121,10 +87,6 @@ class SurveyResource extends Resource implements HasShieldPermissions
                     ->sortable(),
                 Tables\Columns\TextColumn::make('phone')
                     ->searchable(),
-                Tables\Columns\TextColumn::make('age')
-                    ->sortable(),
-                Tables\Columns\TextColumn::make('gender')
-                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\IconColumn::make('has_spun')
                     ->boolean()
                     ->sortable(),

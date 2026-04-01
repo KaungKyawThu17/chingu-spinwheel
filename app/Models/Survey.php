@@ -12,22 +12,11 @@ class Survey extends Model
     use HasFactory;
 
     protected $fillable = [
-            'has_spun',
-            'prize',
-            'event_id',
-            'name',
-            'phone',
-            'age',
-            'gender',
-            'job_title',
-            'drink_time',
-            'drink_place',
-            'drink_whom',
-            'choose_reason',
-            'drink_meal_important',
-            'drink_meal_type',
-            'drink_meal_type_other',
-            'drink_flavor',
+        'has_spun',
+        'prize',
+        'event_id',
+        'name',
+        'phone',
     ];
 
     public function event(): BelongsTo
@@ -35,8 +24,8 @@ class Survey extends Model
         return $this->belongsTo(Event::class);
     }
 
-    public function answers(): HasMany
+    public function responses(): HasMany
     {
-        return $this->hasMany(SurveyAnswer::class);
+        return $this->hasMany(SurveyResponse::class);
     }
 }

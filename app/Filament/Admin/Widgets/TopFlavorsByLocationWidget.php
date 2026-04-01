@@ -2,7 +2,7 @@
 
 namespace App\Filament\Admin\Widgets;
 
-use App\Models\Survey;
+use App\Models\SurveyResponse;
 use Filament\Widgets\Widget;
 use Illuminate\Support\Facades\Schema;
 
@@ -36,6 +36,8 @@ class TopFlavorsByLocationWidget extends Widget
         if (
             $this->location === '' ||
             ! Schema::hasTable('surveys') ||
+            ! Schema::hasTable('survey_responses') ||
+            ! Schema::hasTable('survey_questions') ||
             ! Schema::hasTable('events') ||
             ! Schema::hasColumn('surveys', 'event_id')
         ) {
@@ -44,13 +46,13 @@ class TopFlavorsByLocationWidget extends Widget
 
         $counts = [];
 
-        Survey::query()
-            ->select(['id', 'drink_flavor', 'event_id'])
-            ->whereNotNull('drink_flavor')
-            ->whereHas('event', fn ($query) => $query->where('location', $this->location))
-            ->chunkById(200, function ($surveys) use (&$counts): void {
-                foreach ($surveys as $survey) {
-                    foreach ($this->normalizeFlavors($survey->drink_flavor) as $flavor) {
+        SurveyResponse::query()
+            ->select(['id', 'value'])
+            ->whereHas('question', fn ($query) => $query->where('key', 'drink_flavor'))
+            ->whereHas('survey.event', fn ($query) => $query->where('location', $this->location))
+            ->chunkById(200, function ($responses) use (&$counts): void {
+                foreach ($responses as $response) {
+                    foreach ($this->normalizeFlavors($response->value) as $flavor) {
                         $label = trim((string) $flavor);
 
                         if ($label === '') {
@@ -82,10 +84,18 @@ class TopFlavorsByLocationWidget extends Widget
     /**
      * @return array<int, string>
      */
-    protected function normalizeFlavors(?string $value): array
+    protected function normalizeFlavors(mixed $value): array
     {
         if ($value === null) {
             return [];
+        }
+
+        if (is_array($value)) {
+            return $value;
+        }
+
+        if (! is_string($value)) {
+            return [(string) $value];
         }
 
         $decoded = json_decode($value, true);
