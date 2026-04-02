@@ -29,6 +29,7 @@ class SurveyController extends Controller
     public function showSurveyForm(Request $request)
     {
         $location = $request->query('location') ?: 'yangon';
+        session(['survey_location' => $location]);
 
         return view('survey', [
             'activeEvent' => $this->getActiveEvent($location),
@@ -47,8 +48,11 @@ class SurveyController extends Controller
     //
     public function submitSurvey(Request $request)
     {
-        $location = $request->input('location') ?: $request->query('location');
+        $location = $request->input('location')
+            ?: $request->query('location')
+            ?: session('survey_location');
         $location = $location ?: 'yangon';
+        session(['survey_location' => $location]);
         $activeEvent = $this->getActiveEvent($location);
 
         if (! $activeEvent) {
@@ -91,6 +95,30 @@ class SurveyController extends Controller
 
         $validated = $validator->validated();
         $data = $this->buildSurveyData($questions, $validated);
+        $phone = $data['phone'] ?? null;
+
+        if (filled($phone)) {
+            $existingSurvey = Survey::query()
+                ->where('event_id', $activeEvent->id)
+                ->where('phone', $phone)
+                ->first();
+
+            if ($existingSurvey) {
+                session([
+                    'survey_phone' => $existingSurvey->phone,
+                    'survey_event_id' => $existingSurvey->event_id,
+                ]);
+
+                if ($existingSurvey->has_spun) {
+                    return back()
+                        ->withErrors(['phone' => 'This phone number has already spun for this event.'])
+                        ->withInput();
+                }
+
+                return redirect()->route('survey.spin');
+            }
+        }
+
         $survey = Survey::create([
             ...$data,
             'event_id' => $activeEvent->id,

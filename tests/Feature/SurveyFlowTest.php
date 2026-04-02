@@ -141,6 +141,92 @@ class SurveyFlowTest extends TestCase
         $this->assertSame(['spicy', 'Street Food'], $mealTypeResponse->value);
     }
 
+    public function test_same_phone_can_submit_for_different_location_events(): void
+    {
+        $yangonEvent = Event::create([
+            'name' => 'Yangon Event',
+            'location' => 'yangon',
+            'starts_at' => now()->subDay()->toDateString(),
+            'ends_at' => now()->addDay()->toDateString(),
+            'is_active' => true,
+        ]);
+
+        $mandalayEvent = Event::create([
+            'name' => 'Mandalay Event',
+            'location' => 'mandalay',
+            'starts_at' => now()->subDay()->toDateString(),
+            'ends_at' => now()->addDay()->toDateString(),
+            'is_active' => true,
+        ]);
+
+        $this->createQuestion('phone', 'Phone', 1);
+        $this->createQuestion('name', 'Name', 2);
+
+        $phone = '09111111111';
+
+        $this->post(route('survey.submit'), [
+            'location' => 'yangon',
+            'phone' => $phone,
+            'name' => 'Alice',
+        ])->assertRedirect(route('survey.spin'));
+
+        $this->post(route('survey.submit'), [
+            'location' => 'mandalay',
+            'phone' => $phone,
+            'name' => 'Alice',
+        ])->assertRedirect(route('survey.spin'));
+
+        $normalizedPhone = '959111111111';
+        $this->assertDatabaseHas('surveys', [
+            'event_id' => $yangonEvent->id,
+            'phone' => $normalizedPhone,
+        ]);
+        $this->assertDatabaseHas('surveys', [
+            'event_id' => $mandalayEvent->id,
+            'phone' => $normalizedPhone,
+        ]);
+    }
+
+    public function test_same_phone_submit_again_after_spin_in_same_event_returns_friendly_error(): void
+    {
+        $event = $this->createActiveEvent();
+        $this->createQuestion('phone', 'Phone', 1);
+        $this->createQuestion('name', 'Name', 2);
+
+        $first = $this->post(route('survey.submit', ['location' => 'yangon']), [
+            'location' => 'yangon',
+            'phone' => '09111111111',
+            'name' => 'Alice',
+        ]);
+        $first->assertRedirect(route('survey.spin'));
+
+        $survey = Survey::query()->firstOrFail();
+        $survey->update([
+            'has_spun' => true,
+            'prize' => 'Fans',
+        ]);
+
+        $second = $this
+            ->from(route('survey.form', ['location' => 'yangon']))
+            ->post(route('survey.submit', ['location' => 'yangon']), [
+                'location' => 'yangon',
+                'phone' => '09111111111',
+                'name' => 'Alice',
+            ]);
+
+        $second
+            ->assertRedirect(route('survey.form', ['location' => 'yangon']))
+            ->assertSessionHasErrors(['phone']);
+
+        $this->assertDatabaseCount('surveys', 1);
+        $this->assertDatabaseHas('surveys', [
+            'id' => $survey->id,
+            'event_id' => $event->id,
+            'phone' => '959111111111',
+            'has_spun' => true,
+        ]);
+    }
+
     private function createActiveEvent(): Event
     {
         return Event::create([

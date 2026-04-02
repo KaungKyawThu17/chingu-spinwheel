@@ -4,6 +4,7 @@ namespace App\Filament\Admin\Resources;
 
 use App\Filament\Admin\Resources\SurveyResource\Pages;
 use App\Filament\Exports\SurveyExporter;
+use App\Models\Event;
 use App\Models\Survey;
 use BezhanSalleh\FilamentShield\Contracts\HasShieldPermissions;
 use Filament\Forms;
@@ -11,6 +12,7 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class SurveyResource extends Resource implements HasShieldPermissions
 {
@@ -103,6 +105,32 @@ class SurveyResource extends Resource implements HasShieldPermissions
                     ->visible(fn () => auth()->user()?->can('export_survey')),
             ])
             ->filters([
+                Tables\Filters\SelectFilter::make('event_id')
+                    ->label('Event')
+                    ->relationship('event', 'name')
+                    ->searchable()
+                    ->preload(),
+                Tables\Filters\SelectFilter::make('location')
+                    ->label('Location')
+                    ->options(function (): array {
+                        return Event::query()
+                            ->whereNotNull('location')
+                            ->select('location')
+                            ->distinct()
+                            ->orderBy('location')
+                            ->pluck('location')
+                            ->mapWithKeys(fn (string $location): array => [$location => ucfirst($location)])
+                            ->all();
+                    })
+                    ->query(function (Builder $query, array $data): Builder {
+                        $location = $data['value'] ?? null;
+
+                        if (! filled($location)) {
+                            return $query;
+                        }
+
+                        return $query->whereHas('event', fn (Builder $eventQuery): Builder => $eventQuery->where('location', $location));
+                    }),
                 Tables\Filters\TernaryFilter::make('has_spun'),
             ])
             ->actions([])

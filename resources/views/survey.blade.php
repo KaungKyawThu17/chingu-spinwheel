@@ -83,6 +83,7 @@
             @php
                 $questions = $questions ?? collect();
                 $activeEvent = $activeEvent ?? null;
+                $location = $location ?? request()->query('location', 'yangon');
             @endphp
 
             @if ($activeEvent)
@@ -98,8 +99,9 @@
                     Log::info('Event validation error: ' . $errors->first('event'));
                 @endif
 
-                <form action="{{ route('survey.submit') }}" method="POST" class="space-y-5 sm:space-y-6">
+                <form action="{{ route('survey.submit', ['location' => $location]) }}" method="POST" class="space-y-5 sm:space-y-6">
                     @csrf
+                    <input type="hidden" name="location" value="{{ $location }}">
 
                     @if ($questions->isNotEmpty())
                         @foreach ($questions as $question)
