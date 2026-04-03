@@ -1,1 +1,5 @@
 [2026-04-02 08:02:47] local.INFO: Survey form errors: ["This phone number has already spun for this event."] 
+[2026-04-03 03:42:13] local.INFO: Survey form errors: ["Please specify the other option.","Please specify the other option."] 
+[2026-04-03 03:47:25] local.INFO: Survey form errors: ["Please enter a valid phone number.","Please specify the other option.","Please specify the other option."] 
+[2026-04-03 03:47:43] local.INFO: Survey form errors: ["Please enter a valid phone number.","Please specify the other option.","Please specify the other option."] 
+[2026-04-03 03:47:59] local.INFO: Survey form errors: ["Please specify the other option.","Please specify the other option."] 

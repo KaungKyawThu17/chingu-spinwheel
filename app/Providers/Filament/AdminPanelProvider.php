@@ -28,6 +28,7 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('dashboard')
             ->login()
+            ->favicon(asset('images/chingulogo.jpg'))
             ->colors([
                 'primary' => Color::Amber,
             ])

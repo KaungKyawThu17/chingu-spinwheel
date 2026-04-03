@@ -5,6 +5,7 @@
     <meta charset="utf-8">
     <title>Survey Form</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" type="image/jpeg" href="{{ asset('images/chingulogo.jpg') }}">
 
     <!-- Tailwind CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -115,11 +116,23 @@
                             @endphp
 
                             <div>
-                                <label class="font-semibold block mb-1">{{ $question->label }}</label>
+                                <label class="font-semibold block mb-1">
+                                    {{ $question->label }}
+                                    @if ($required)
+                                        <span class="text-red-600" aria-hidden="true">*</span>
+                                    @endif
+                                </label>
 
                                 @if ($type === 'text')
-                                    <input type="text" name="{{ $key }}" value="{{ old($key) }}"
-                                        @if ($key === 'phone') inputmode="numeric" @endif
+                                    <input type="{{ $key === 'phone' ? 'tel' : 'text' }}" name="{{ $key }}" value="{{ old($key) }}"
+                                        @if ($key === 'phone')
+                                            inputmode="numeric"
+                                            pattern="[0-9]*"
+                                            maxlength="12"
+                                            placeholder="09"
+                                            oninput="this.value=this.value.replace(/\D/g,'')"
+                                            autocomplete="tel"
+                                        @endif
                                         class="border border-gray-400 p-3 w-full rounded-lg focus:outline-none focus:border-blue-500 text-sm sm:text-base"
                                         @if ($required) required @endif>
                                 @elseif ($type === 'select')
@@ -209,7 +222,10 @@
                         <!-- Phone -->
                         <div>
                             <label class="font-semibold block mb-1">ဖုန်းနံပါတ်</label>
-                            <input type="text" inputmode="numeric" name="phone" value="{{ old('phone') }}"
+                            <input type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="12"
+                                placeholder="09" oninput="this.value=this.value.replace(/\D/g,'')" name="phone"
+                                autocomplete="tel"
+                                value="{{ old('phone') }}"
                                 class="border border-gray-400 p-3 w-full rounded-lg focus:outline-none focus:border-blue-500 text-sm sm:text-base"
                                 required>
                             @error('phone')
