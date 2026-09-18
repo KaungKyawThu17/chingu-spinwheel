@@ -621,6 +621,10 @@
             const jobSelect = document.querySelector('select[name="job_title"]');
             const otherInput = document.getElementById('job_title_other');
 
+            if (!jobSelect || !otherInput) {
+                return;
+            }
+
             function toggleJobOtherInput() {
                 if (jobSelect.value === 'other') {
                     otherInput.disabled = false;
@@ -638,6 +642,10 @@
         document.addEventListener("DOMContentLoaded", function() {
             const otherCheckbox = document.querySelector('input[name="drink_meal_type[]"][value="other"]');
             const otherInput = document.getElementById('drink_meal_type_other');
+
+            if (!otherInput) {
+                return;
+            }
 
             function toggleMealOtherInput() {
                 if (otherCheckbox && otherCheckbox.checked) {
